@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>Break Glass Admin Password</displayName>
+<description>Holds the rotating 'breakglass' admin password for each computer.&#13;
+In this version, the password is stored locally in a protected file/folder and gathered at recon&#13;
+</description>
+<dataType>string</dataType>
+<scriptContentsMac>#!/bin/bash&#13;
+&#13;
+ATTRIBUTE="tech.rocketman.breakglassadmin.plist"&#13;
+FIELDNAME="Password"&#13;
+&#13;
+EXTATTRPLIST="/Library/Preferences/${ATTRIBUTE}"&#13;
+if [[ -f "${EXTATTRPLIST}" ]]; then&#13;
+	RESULT=$(/usr/bin/defaults read "${EXTATTRPLIST}" ${FIELDNAME})&#13;
+else&#13;
+	RESULT="WARNING: Unable to read file. Will try again at next inventory."&#13;
+fi&#13;
+&#13;
+echo "&lt;result&gt;${RESULT}&lt;/result&gt;"</scriptContentsMac>
+</extensionAttribute>
