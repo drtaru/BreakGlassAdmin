@@ -75,6 +75,7 @@ If this is true ('1') and for some reason the script can't retrieve the old pass
 
 * Add option to store password locally *and* via API call at the same time
 * Add capability to encrypt and decrypt the password during local storage
+* Add another password mode to simulate the launch codes in one of my favorite movies, the 1983 classic, [WarGames](https://www.imdb.com/title/tt0086567/). (e.g. CPE1704TKS)
 
 ## Warnings and Disclaimers
 
