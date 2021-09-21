@@ -1,5 +1,27 @@
 #!/bin/bash
 
+################################
+##/////////////////////)######## Break Glass Admin
+##|                      )######
+##|                        )#### Creates and/or changes the password of a
+##|                         )### backdoor admin account for emergency use
+##|         #######)         )##
+##|         ########)        )## TYPE: Jamf Policy Script
+##|         #######)        )###
+##|                         )### Parameters:
+##|                       )##### $1-3 - Reserved by Jamf
+##|                      )###### $4 - Username of admin account
+##|      |  ####\         \##### $5 - Full name of admin account
+##|      |  #####\         \#### $6 - Password generation method (see code)
+##|    | |  ######\         \### $7 - Storage method (see code)
+##|  | | |  #######\         \## $8 - Extension Attribute for password storage
+################################ $9 - Force (y/n) (see code)
+##
+## Latest version and additional notes available at our GitHub
+##      https://github.com/Rocketman-Tech/MakeMeAnAdmin
+##
+################################################################################
+
 ## Get the policy variables
 ADMINUSER="$4" 	## What is the name of the admin user to change/create
 ADMINFULL="$5" 	## Full name of admin user
