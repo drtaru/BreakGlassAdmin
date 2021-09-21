@@ -18,7 +18,7 @@
 ################################ $9 - Force (y/n) (see code)
 ##
 ## Latest version and additional notes available at our GitHub
-##      https://github.com/Rocketman-Tech/MakeMeAnAdmin
+##      https://github.com/Rocketman-Tech/BreakGlassAdmin
 ##
 ################################################################################
 
