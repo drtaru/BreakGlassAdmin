@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ATTRIBUTE="tech.rocketman.backdooradmin.plist"
+ATTRIBUTE="tech.rocketman.breakglassadmin.plist"
 FIELDNAME="Password"
 
 EXTATTRPLIST="/Library/Preferences/${ATTRIBUTE}"
