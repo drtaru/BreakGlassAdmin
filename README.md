@@ -1,5 +1,5 @@
 # BreakGlassAdmin
-<img src="images/breakglass.jpg" height="200" align=right>
+<img src="images/breakglass.jpg" height="200" align=right alt="In case of emergency, break glass">
 
 A workflow to create/manage a backdoor admin account *(e.g. 'breakglass')* with a password that is unique to each computer, rotate the password regularly, and make the password available in Jamf for use. _(E.g. Another LAPS workflow.)_
 
