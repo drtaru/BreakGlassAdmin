@@ -11,7 +11,7 @@
 ##|                         )### Parameters:
 ##|                       )##### $1-3 - Reserved by Jamf
 ##|                      )###### $4 - Username of admin account
-##|      |  ####\         \##### $5 - Full name of admin account
+##|      |  ####\         \##### $5 -
 ##|      |  #####\         \#### $6 - Password generation method (see code)
 ##|    | |  ######\         \### $7 - Storage method (see code)
 ##|  | | |  #######\         \## $8 - Extension Attribute for password storage
@@ -23,15 +23,19 @@
 ################################################################################
 
 ## Get the policy variables
-ADMINUSER="$4" 	## What is the name of the admin user to change/create
-ADMINFULL="$5" 	## Full name of admin user
-PASSMODE="$6"	## Which method to use to create the password (nato, xkcd, names, pseudoRandom)
-STORAGE="$7" 	## "LOCAL" or Base64 encoded "user:password" string
-EXTATTR="$8" 	## Name of the extension attribute where password is stored 
-				##	(e.g. "Backdoor Admin Password" for cloud or "tech.rocketman.backdooradmin.plist" for local)
-FORCE="$9"		## 1 (true) or 0 (false) - If true and old password is unknown or can't be changed,
-				##	the script will delete the account and re-create it instead. 
-				##	USE WITH EXTREME CAUTION!
+ADMINUSER="$4"  ## What is the username of the admin user to change/create. Also used for real name.
+PASSMODE="$6"   ## Which method to use to create the password (nato, xkcd, names, pseudoRandom)
+DEFAULTPW=""    ## Password to try if old password is unknown
+FORCE="$9"      ## 1 (true) or 0 (false) - If true and old password is unknown or can't be changed,
+                ##		the script will delete the account and re-create it instead.
+                ##		USE WITH EXTREME CAUTION!
+APIHASH=""      ## Base64 encoded "user:password" of API user for server-side storage
+
+STORAGE="$7"    ## "LOCAL" or Base64 encoded "user:password" string
+
+EXTATTR="$8"    ## Name of the extension attribute where password is stored
+                ##		(e.g. "Backdoor Admin Password" for cloud or "tech.rocketman.backdooradmin.plist" for local)
+
 
 ## Set additional variables based on local or remote storage
 if [[ ${STORAGE} == "LOCAL" ]]; then
@@ -40,7 +44,7 @@ else
 	STORAGE="REMOTE" ## Store in Jamf Pro as Extension Attribute
 	APIHASH=$7
 	APIURL=$(defaults read /Library/Preferences/com.jamfsoftware.jamf.plist jss_url)
-	SERIAL=$(system_profiler SPHardwareDataType | grep -i serial | grep system | awk '{print $NF}')	
+	SERIAL=$(system_profiler SPHardwareDataType | grep -i serial | grep system | awk '{print $NF}')
 fi
 
 #################
@@ -50,22 +54,22 @@ fi
 function debugLog () {
 	message=$1
 	timestamp=$(date +'%H%M%S')
-	
+
 	echo "${timestamp}: ${message}" >> /tmp/debug.log
 }
 
 function createRandomPassword() {
 	system=$1
-	
+
 	case "$system" in
-	
+
 		nato) ## Using NATO Letters (e.g. WhiskeyTangoFoxtrot)
 			NUM=4
 			NATO=(Alpha Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliet Kilo Lima Mike November Oscar Papa Quebec Romeo Sierra Tango Uniform Victor Whiskey Yankee Zulu)
 			MAX=${#NATO[@]}
 			NEWPASS=$(for u in $(jot -r ${NUM} 0 $((${MAX}-1)) ); do  echo -n ${NATO[$u]} ; done)
 			;;
-		
+
 		xkcd) ## Using the system from the XKCD webcomic (https://xkcd.com/936/)
 			NUM=4
 			## Get words that are betwen 4 and 6 characters in length, ignoring proper nouns
@@ -78,20 +82,23 @@ function createRandomPassword() {
 				NEWPASS=${NEWPASS}${first}${rest}
 			done
 			;;
-					
+
 		names) ## Uses the same scheme as above but only with the propernames database
 			NUM=4
 			MAX=$(wc -l /usr/share/dict/propernames | awk '{print $1}')
 			CHOICES=$(for u in $(jot -r ${NUM} 0 $((${MAX}-1)) ); do tail +${u} /usr/share/dict/propernames 2>/dev/null | head -1 ; done)
 			NEWPASS=$(echo "${CHOICES}" | tr -d "[:space:]" )
 			;;
-			
+
+		schema) ## Get all the attributes from an XML blob
+			;;
+
 		pseudoRandom | *) ## Based on University of Nebraska' LAPS system (https://github.com/NU-ITS/LAPSforMac)
 			NUM=16
 			NEWPASS=$(openssl rand -base64 100 | tr -d OoIi1lLS | head -c${NUM};echo)
-			
+
 	esac
-	
+
 	echo ${NEWPASS}
 }
 
@@ -99,38 +106,36 @@ function createHiddenAdmin() {
 
 	## Using the built-in jamf tool which beats the old way which doesn't work
 	## across all OS versions the same way.
-    echo "Creating ${ADMINUSER}"
-	/usr/local/bin/jamf createAccount -username ${ADMINUSER} -realname "${ADMINFULL}" -password "${NEWPASS}" –home /private/var/${ADMINUSER} –shell “/bin/zsh” -hiddenUser -admin -suppressSetupAssistant
+  echo "Creating ${ADMINUSER}"
+	jamf createAccount -username ${ADMINUSER} -realname "${ADMINUSER}" -password "${NEWPASS}" –home /private/var/${ADMINUSER} –shell “/bin/zsh” -hiddenUser -admin -suppressSetupAssistant
 }
 
 function changePassword() {
-	
+
 	## Delete keychain if present
-	if [[  -f "~/${ADMINUSER}/Library/Keychains/login.keychain" ]]; then
-		rm "~${ADMINUSER}/Library/Keychains/login.keychain"
-	fi
+	rm -f "~${ADMINUSER}/Library/Keychains/login.keychain"
 
 	## Change password
-	/usr/local/bin/jamf changePassword -username ${ADMINUSER} -oldPassword "${OLDPASS}" -password "${NEWPASS}"
-	
-	## If we are forcing the issue 
+	jamf changePassword -username ${ADMINUSER} -oldPassword "${OLDPASS}" -password "${NEWPASS}"
+
+	## If we are forcing the issue
 	if [[ $? -ne 0 ]]; then ## Error
+		echo "ERROR: $?" >> /tmp/debug.log
 		if [[ ${FORCE} ]]; then
-			echo "Time to fix"
-			/usr/local/bin/jamf deleteAccount -username ${ADMINUSER} -deleteHomeDirectory
+			echo "Delete and recreate"
+			jamf deleteAccount -username ${ADMINUSER} -deleteHomeDirectory
 			createHiddenAdmin
 		else
 			## Log it
-			NEWPASS="EXCEPTION - Password change failed"
-		fi		
+			NEWPASS="EXCEPTION - Password change failed: $?"
+		fi
 	fi
-		
 }
 
-function getCurrentPassword() {	
+function getCurrentPassword() {
 	if [[ ${STORAGE} == "LOCAL" ]]; then
 		if [[ -f "${LOCALEA}" ]]; then
-			CURRENTPASS=$(/usr/bin/defaults read "${LOCALEA}" Password 2>/dev/null)
+			CURRENTPASS=$(defaults read "${LOCALEA}" Password 2>/dev/null)
 		else
 			CURRENTPASS="EXCEPTION - Local attribute requested but not found"
 		fi
@@ -138,20 +143,20 @@ function getCurrentPassword() {
 		## Get the password through the API
 		CURRENTPASS=$(curl -ks -H "Authorization: Basic ${APIHASH}" -H "Accept: text/xml" ${APIURL}JSSResource/computers/serialnumber/${SERIAL}/subset/extension_attributes | xmllint --xpath "//*[name='${EXTATTR}']/value/text()" -)
 	fi
-	
+
 	## Pass it back
 	echo $CURRENTPASS
 }
 
 function storeCurrentPassword() {
 	if [[ ${STORAGE} == "LOCAL" ]]; then
-		## Store the password locally for pickup by Recon	
+		## Store the password locally for pickup by Recon
 		/usr/bin/defaults write "${LOCALEA}" Password -string "${NEWPASS}"
 	else
 		# Store the password in Jamf
 		XML="<computer><extension_attributes><extension_attribute><name>${EXTATTR}</name><value>${NEWPASS}</value></extension_attribute></extension_attributes></computer>"
 		debugLog "XML: ${XML}"
-		/usr/bin/curl -k -H "Authorization: Basic ${APIHASH}" "${APIURL}JSSResource/computers/serialnumber/${SERIAL}" -H "Content-type: application/xml" -X PUT -d "${XML}"
+		curl -k -H "Authorization: Basic ${APIHASH}" "${APIURL}JSSResource/computers/serialnumber/${SERIAL}" -H "Content-type: application/xml" -X PUT -d "${XML}"
 	fi
 }
 
@@ -170,11 +175,11 @@ debugLog "NewPass: ${NEWPASS}"
 ## Are we creating the user or changing their password
 if [[ $EXISTS -gt 0 ]]; then
 	debugLog "Exists: Changing"
-	
-	## Get the existing password 
+
+	## Get the existing password
 	OLDPASS=$(getCurrentPassword)
 	debugLog "Old: ${OLDPASS}"
-	
+
 	## Exception Block
 	## This was added to handle the computers that had an account prior to enrollment.
 	## To change a password this, we need to know the old one. Now it also handles change failures and more.
@@ -183,12 +188,12 @@ if [[ $EXISTS -gt 0 ]]; then
 	##		this script will run normally next time and update with a random password
 	##
 	case ${OLDPASS} in
-		"") 
+		"")
 			debugLog "Unknown - create exception"
 			## The account was created before and is unknown
 			NEWPASS="EXCEPTION - Unknown password"
 			;;
-					
+
 		EXCEPTION*)
 			debugLog "Previous exception - ${OLDPASS}"
 			if [[ ${FORCE} ]]; then
@@ -197,9 +202,9 @@ if [[ $EXISTS -gt 0 ]]; then
 				changePassword
 			else
 				NEWPASS=${OLDPASS}
-			fi			
+			fi
 			;;
-					
+
 		*)
 			debugLog "Changing from ${OLDPASS} to ${NEWPASS}"
 			## Change the password
