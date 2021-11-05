@@ -12,19 +12,15 @@
         Name: Break Glass Admin
  Description: Creates/manages a hidden admin account with a random password
   Parameters: $1-$3 - Reserved by Jamf (Mount Point, Computer Name, Username)
-              ADMINUSER - The name of the admin account
-							PASSMODE - Which method of creating a password to use (see below)
-							FORCE - Force (0 or 1) - If password is unknown,
-							        do we delete the old account and recreate?
-
-							DEFAULTPW - Password to try if previous password is unknown
-
-							STORAGE - "Local," "Server," or "Both"
-							APIHASH - Base64 encoded "user:password" of API user for
-							          server-side storage
-							EXTATTR - Name of extension attribute where password is stored
-								(e.g. "Backdoor Admin Password" for server-side or
+              $4 - The name of the admin account
+							$5 - Which method of creating a password to use (see below)
+							$6 - Storage method:
+							     "LOCAL" or Base64 encoded "user:password" string for API
+							$7 - Name of extension attribute where password is stored
+								   (e.g. "Backdoor Admin Password" for server-side or
 								      "tech.rocketman.breakglass.plist" for local)
+              $8 - Force (0 or 1) - If password is unknown,
+                   do we delete the old account and recreate?
 
 Available Password Methods:
 	          'nato' - Combines words from the NATO phonetic alphabet
@@ -51,12 +47,11 @@ EOL
 
 ## Get the policy variables
 ADMINUSER="$4" 	## What is the name of the admin user to change/create
-ADMINFULL="$5" 	## Full name of admin user
-PASSMODE="$6"	## Which method to use to create the password (nato, xkcd, names, pseudoRandom)
-STORAGE="$7" 	## "LOCAL" or Base64 encoded "user:password" string
-EXTATTR="$8" 	## Name of the extension attribute where password is stored
+PASSMODE="$5"	## Which method to use to create the password (nato, xkcd, names, pseudoRandom)
+STORAGE="$6" 	## "LOCAL" or Base64 encoded "user:password" string
+EXTATTR="$7" 	## Name of the extension attribute where password is stored
 				##	(e.g. "Backdoor Admin Password" for cloud or "tech.rocketman.backdooradmin.plist" for local)
-FORCE="$9"		## 1 (true) or 0 (false) - If true and old password is unknown or can't be changed,
+FORCE="$8"		## 1 (true) or 0 (false) - If true and old password is unknown or can't be changed,
 				##	the script will delete the account and re-create it instead.
 				##	USE WITH EXTREME CAUTION!
 
