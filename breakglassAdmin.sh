@@ -12,15 +12,17 @@
         Name: Break Glass Admin
  Description: Creates/manages a hidden admin account with a random password
   Parameters: $1-$3 - Reserved by Jamf (Mount Point, Computer Name, Username)
-              $4 - The name of the admin account
-              $5 - Which method of creating a password to use (see below)
-              $6 - Storage method:
-                   "LOCAL" or Base64 encoded "user:password" string for API
-              $7 - Name of extension attribute where password is stored
-                   (e.g. "Backdoor Admin Password" for server-side or
-                   "tech.rocketman.breakglass.plist" for local)
-              $8 - Force (0 or 1) - If password is unknown,
-                   do we delete the old account and recreate?
+              $4 - The username and (optional) full name of the admin account
+              $5 - Hide the account? (anything for true, blank for false)
+              $6 - Which method of creating a password to use (see below)
+              $7 - Storage method: "LOCAL", "API", or "BOTH"
+              $8 - Name of extension attribute where password is stored
+                   (e.g. "Backdoor Admin Password")
+                   Local info will be stored at:
+                    /Library/Application Support/tech.rocketman.backdooradmin.plist
+              $9 - Force (0 or 1) - If password is unknown,
+                   do we try to delete the old account and recreate?
+              $10- API Auth String - BASE64 encoded version of "user:password"
 
 Available Password Methods:
             'nato' - Combines words from the NATO phonetic alphabet
@@ -39,18 +41,35 @@ Available Password Methods:
                      * 1 Lower case character (min)
                      * 1 Digit (min)
                      * 1 Special character (min)
+                     Optionally you can add a string to specify overrides
+                     in the following format:
+                       N=20;U=3;L=1;D=2;S=0
 
 Latest version and additional notes available at our GitHub
 		https://github.com/Rocketman-Tech/BreakGlassAdmin
 
 EOL
 
-## Get the policy variables
+##
+## Create settings from Policy Parameters
+##
+
+## User-related components
 ADMINUSER="$4" 	## What is the name of the admin user to change/create
+USERNAME=$(echo ${ADMINUSER} | awk '{print $1}')
+FULLNAME="$(echo ${ADMINUSER} | awk '{ for (i=2; i<=NF; i++){print $i} }')"
+FULLNAME=$( [[ $FULLNAME != "" ]] && echo "${FULLNAME}" || echo ${USERNAME} )
+VISIBLE=$( [[ "$5" ]] || echo "-hiddenUser")
+
+## Choose the password generation method
 PASSMODE="$5"	## Which method to use to create the password (nato, xkcd, names, pseudoRandom)
-STORAGE="$6" 	## "LOCAL" or Base64 encoded "user:password" string
-EXTATTR="$7" 	## Name of the extension attribute where password is stored
-				##	(e.g. "Backdoor Admin Password" for cloud or "tech.rocketman.backdooradmin.plist" for local)
+
+## Storage Related Options
+STORAGE="$6" 	## "LOCAL", "REMOTE", or "BOTH"
+
+EXTATTR="$7" 	## Name of the extension attribute to store password in Jamf
+              ##	(e.g. "Backdoor Admin Password" for cloud or "tech.rocketman.backdooradmin.plist" for local)
+
 FORCE="$8"		## 1 (true) or 0 (false) - If true and old password is unknown or can't be changed,
 				##	the script will delete the account and re-create it instead.
 				##	USE WITH EXTREME CAUTION!
@@ -178,29 +197,27 @@ function createRandomPassword() {
 	echo ${NEWPASS}
 }
 
-function createHiddenAdmin() {
-
+function createBackdoorAdmin() {
 	## Using the built-in jamf tool which beats the old way which doesn't work
 	## across all OS versions the same way.
   echo "Creating ${ADMINUSER}"
-	jamf createAccount -username ${ADMINUSER} -realname "${ADMINUSER}" -password "${NEWPASS}" –home /private/var/${ADMINUSER} –shell “/bin/zsh” -hiddenUser -admin -suppressSetupAssistant
+	jamf createAccount -username ${USERNAME} -realname "${FULLNAME}" -password "${NEWPASS}" –home /private/var/${USERNAME} –shell “/bin/zsh” ${VISIBLE} -admin -suppressSetupAssistant
 }
 
 function changePassword() {
-
 	## Delete keychain if present
-	rm -f "~${ADMINUSER}/Library/Keychains/login.keychain"
+	rm -f "~${USERNAME}/Library/Keychains/login.keychain"
 
 	## Change password
-	jamf changePassword -username ${ADMINUSER} -oldPassword "${OLDPASS}" -password "${NEWPASS}"
+	jamf changePassword -username ${USERNAME} -oldPassword "${OLDPASS}" -password "${NEWPASS}"
 
 	## If we are forcing the issue
 	if [[ $? -ne 0 ]]; then ## Error
 		echo "ERROR: $?" >> /tmp/debug.log
 		if [[ ${FORCE} ]]; then
 			echo "Delete and recreate"
-			jamf deleteAccount -username ${ADMINUSER} -deleteHomeDirectory
-			createHiddenAdmin
+			jamf deleteAccount -username ${USERNAME} -deleteHomeDirectory
+			createBackdoorAdmin
 		else
 			## Log it
 			NEWPASS="EXCEPTION - Password change failed: $?"
@@ -249,7 +266,7 @@ function storeCurrentPassword() {
 ##
 
 ## See if the user exists
-EXISTS=$(id ${ADMINUSER} 2>/dev/null | wc -l | awk '{print $NF}')
+EXISTS=$(id ${USERNAME} 2>/dev/null | wc -l | awk '{print $NF}')
 debugLog "Exists: ${EXISTS}"
 
 ## Either way, we'll need a random password
@@ -302,7 +319,7 @@ else
 	## Create the account
 	debugLog "Creating new admin"
 	## Create the user
-	createHiddenAdmin
+	createBackdoorAdmin
 
 fi
 
