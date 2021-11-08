@@ -47,20 +47,20 @@ EOL
 
 ## Get the policy variables
 ADMINUSER="$4" 	## What is the name of the admin user to change/create
-PASSMODE="$5"	## Which method to use to create the password (nato, xkcd, names, pseudoRandom)
-STORAGE="$6" 	## "LOCAL" or Base64 encoded "user:password" string
-EXTATTR="$7" 	## Name of the extension attribute where password is stored
-				##	(e.g. "Backdoor Admin Password" for cloud or "tech.rocketman.backdooradmin.plist" for local)
-FORCE="$8"		## 1 (true) or 0 (false) - If true and old password is unknown or can't be changed,
-				##	the script will delete the account and re-create it instead.
-				##	USE WITH EXTREME CAUTION!
+PASSMODE="$5"   ## Which method to use to create the password (nato, xkcd, names, pseudoRandom)
+STORAGE="$6"    ## "LOCAL" or Base64 encoded "user:password" string
+EXTATTR="$7"    ## Name of the extension attribute where password is stored
+                ##	(e.g. "Backdoor Admin Password" for cloud or "tech.rocketman.backdooradmin.plist" for local)
+FORCE="$8"      ## 1 (true) or 0 (false) - If true and old password is unknown or can't be changed,
+                ##	the script will delete the account and re-create it instead.
+                ##	USE WITH EXTREME CAUTION!
 
 ## Set additional variables based on local or remote storage
 if [[ ${STORAGE} == "LOCAL" ]]; then
 	LOCALEA="/Library/Preferences/${EXTATTR}"
 else
 	STORAGE="REMOTE" ## Store in Jamf Pro as Extension Attribute
-	APIHASH=$7
+	APIHASH=$6
 	APIURL=$(defaults read /Library/Preferences/com.jamfsoftware.jamf.plist jss_url)
 	SERIAL=$(system_profiler SPHardwareDataType | grep -i serial | grep system | awk '{print $NF}')
 fi
