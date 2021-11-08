@@ -13,32 +13,32 @@
  Description: Creates/manages a hidden admin account with a random password
   Parameters: $1-$3 - Reserved by Jamf (Mount Point, Computer Name, Username)
               $4 - The name of the admin account
-							$5 - Which method of creating a password to use (see below)
-							$6 - Storage method:
-							     "LOCAL" or Base64 encoded "user:password" string for API
-							$7 - Name of extension attribute where password is stored
-								   (e.g. "Backdoor Admin Password" for server-side or
-								      "tech.rocketman.breakglass.plist" for local)
+              $5 - Which method of creating a password to use (see below)
+              $6 - Storage method:
+                   "LOCAL" or Base64 encoded "user:password" string for API
+              $7 - Name of extension attribute where password is stored
+                   (e.g. "Backdoor Admin Password" for server-side or
+                   "tech.rocketman.breakglass.plist" for local)
               $8 - Force (0 or 1) - If password is unknown,
                    do we delete the old account and recreate?
 
 Available Password Methods:
-	          'nato' - Combines words from the NATO phonetic alphabet
-	                   (e.g. "WhiskeyTangoFoxtrot")
-						'wopr' - Like the launch codes in the 80s movie, "Wargames"
-                     (https://www.imdb.com/title/tt0086567)
-										 (e.g. "CPE 1704 TKS")
-	          'xkcd' - Using the system from the XKCD webcomic
-						         (https://xkcd.com/936)
-	         'names' - Same as above but only with the propernames database
-  	'pseudoRandom' - Based on University of Nebraska' LAPS system
-	                   (https://github.com/NU-ITS/LAPSforMac)
+            'nato' - Combines words from the NATO phonetic alphabet
+                     (e.g. "WhiskeyTangoFoxtrot")
+            'wopr' - Like the launch codes in the 80s movie, "Wargames"
+                     [https://www.imdb.com/title/tt0086567]
+                     (e.g. "CPE 1704 TKS")
+            'xkcd' - Using the system from the XKCD webcomic
+                     (https://xkcd.com/936)
+           'names' - Same as above but only with the propernames database
+    'pseudoRandom' - Based on University of Nebraska' LAPS system
+                    (https://github.com/NU-ITS/LAPSforMac)
 'custom' (default) - Customizable format with the following defaults
                      * 16 characters
-										 * 1 Upper case character (min)
-										 * 1 Lower case character (min)
-										 * 1 Digit (min)
-										 * 1 Special character (min)
+                     * 1 Upper case character (min)
+                     * 1 Lower case character (min)
+                     * 1 Digit (min)
+                     * 1 Special character (min)
 
 Latest version and additional notes available at our GitHub
 		https://github.com/Rocketman-Tech/BreakGlassAdmin
@@ -89,6 +89,7 @@ function createRandomPassword() {
 			;;
 
 		wopr) ## Like the launch codes in the 80s movie "Wargames" (e.g. "CPE 1704 TKS")
+			## FWIW - The odds of getting the same code as in the movie is roughtly three trillion to one.
 			PRE=$(jot -nrc -s '' 3 65 90)
 			NUM=$(jot -nr -s '' 4 0 9)
 			POST=$(jot -nrc -s '' 3 65 90)
@@ -121,7 +122,7 @@ function createRandomPassword() {
 			;;
 
 		custom* | *) ## Adjustable scheme
-			## Example: "schema N=16;S=1;D=2;L=3;U=4"
+			## Example: "custom N=16;S=1;D=2;L=3;U=4"
 
 			## Defaults
 			N=16 # Password length
