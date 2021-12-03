@@ -65,17 +65,21 @@ In this same repository is a sample of a script-based extension attribute to pul
 
 ***Note:*** In a future version, there will be an option for both local *and* remote storage.
 
+<!--
+- [ ] Document all API user permissions based on Extention Attribute Inventory Display type
+-->
+
 #### Force / Destructive
 
-If this is true ('1') and for some reason the script can't retrieve the old password (*e.g. API failure on previous run, local file deletion, etc.) then the script will attempt to delete the account and re-create it.
+If this is true ('1') and for some reason the script can't retrieve the old password (*e.g. API failure on previous run, local file deletion, etc.*) then the script will attempt to delete the account and re-create it.
 
 ***WARNING:*** If the backdoor admin account has files/preferences and this option is selected, those files *will* be deleted! Use at your own risk!
 
 ## Future Upgrades
 
-* Add option to store password locally *and* via API call at the same time
-* Add capability to encrypt and decrypt the password during local storage
-* Add another password mode to simulate the launch codes in one of my favorite movies, the 1983 classic, [WarGames](https://www.imdb.com/title/tt0086567/). (e.g. CPE1704TKS)
+- [X] ~~Add option to store password locally *and* via API call at the same time~~
+- [ ] Add capability to encrypt and decrypt the password during local storage
+- [X] ~~Add another password mode to simulate the launch codes in one of my favorite movies, the 1983 classic, [WarGames](https://www.imdb.com/title/tt0086567/). (e.g. CPE1704TKS)~~
 
 ## Warnings and Disclaimers
 
