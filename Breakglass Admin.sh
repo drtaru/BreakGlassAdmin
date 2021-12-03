@@ -18,7 +18,7 @@
                    (e.g. "Breakglass Admin")
               $7 - Storage method: Provide BASE64 encoded "user:password" for
                                    storage via API. Otherwise locally stored.
-              $11- Overrides - See GitHub for usage
+              $11- Overrides (optional) - See GitHub for usage
 
 Available Password Methods:
             'nato' - Combines words from the NATO phonetic alphabet
@@ -61,7 +61,7 @@ FULLNAME=$( [[ $FULLNAME != "" ]] && echo "${FULLNAME}" || echo ${USERNAME} )
 PASSMODE=$([ "$5" ] && echo "$5" || echo "custom")
 
 ## Name of the extension attribute to store password
-EXTATTR=$([ "$6" ] && echo "$6" || echo "Breakglass Admin Password")
+EXTATTR=$([ "$6" ] && echo "$6" || echo "Breakglass Admin")
 
 ## API User "Hash" - Base64 encoded "user:password" string for API use
 APIHASH=$([ "$7"] && echo "$7" || echo "")
@@ -134,15 +134,6 @@ function createRandomPassword() {
 			NEWPASS=$(for u in $(jot -r ${NUM} 0 $((${MAX}-1)) ); do  echo -n ${NATO[$u]} ; done)
 			;;
 
-		wopr) ## Like the launch codes in the 80s movie "Wargames" (imdb.com/title/tt0086567)
-			## (Example "CPE 1704 TKS")
-			## Fun Fact - The odds of getting the same code as in the movie is roughtly three trillion to one.
-			PRE=$(jot -nrc -s '' 3 65 90)
-			NUM=$(jot -nr -s '' 4 0 9)
-			POST=$(jot -nrc -s '' 3 65 90)
-			NEWPASS="${PRE} ${NUM} ${POST}"
-			;;
-
 		xkcd) ## Using the system from the XKCD webcomic (https://xkcd.com/936/)
 			NUM=$([ ${NUM} ] && echo ${NUM} || echo "4")
 			## Get words that are betwen 4 and 6 characters in length, ignoring proper nouns
@@ -154,6 +145,15 @@ function createRandomPassword() {
 				rest=$(echo $word | cut -c2-)
 				NEWPASS=${NEWPASS}${first}${rest}
 			done
+			;;
+
+		wopr) ## Like the launch codes in the 80s movie "Wargames" (https://www.imdb.com/title/tt0086567)
+			## (Example "CPE 1704 TKS")
+			## Fun Fact - The odds of getting the same code as in the movie is roughtly three trillion to one.
+			PRE=$(jot -nrc -s '' 3 65 90)
+			NUM=$(jot -nr -s '' 4 0 9)
+			POST=$(jot -nrc -s '' 3 65 90)
+			NEWPASS="${PRE} ${NUM} ${POST}"
 			;;
 
 		names) ## Uses the same scheme as above but only with the propernames database
