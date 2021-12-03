@@ -3,18 +3,18 @@
 
 A workflow to create/manage a backdoor admin account *(e.g. 'breakglass')* with a password that is unique to each computer, rotate the password regularly, and make the password available in Jamf for use. _(E.g. Another LAPS workflow.)_
 
-<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:0 orderedList:0 -->
+<!-- TOC depthFrom:1 depthTo:6 withLinks:0 updateOnSave:1 orderedList:0 -->
 
 - [BreakGlassAdmin](#breakglassadmin)
 	- [Background](#background)
 	- [Usage](#usage)
-			- [4 - Admin Username and Full Name](#4-admin-username-and-full-name)
-			- [5 - Available Password Methods](#5-available-password-methods)
-			- [6 - Extension Attribute](#6-extension-attribute)
-			- [7 - Storage Method](#7-storage-method)
-				- [Storing the password in Jamf Pro *(default)*](#storing-the-password-in-jamf-pro-default)
-				- [Storing the password on the local client](#storing-the-password-on-the-local-client)
-			- [11 - Overrides](#11-overrides)
+		- [4 - Admin Username and Full Name](#4-admin-username-and-full-name)
+		- [5 - Available Password Methods](#5-available-password-methods)
+		- [6 - Extension Attribute](#6-extension-attribute)
+		- [7 - Storage Method](#7-storage-method)
+			- [Storing the password in Jamf Pro *(default)*](#storing-the-password-in-jamf-pro-default)
+			- [Storing the password on the local client](#storing-the-password-on-the-local-client)
+		- [11 - Overrides](#11-overrides)
 	- [Supplemental Scripts](#supplemental-scripts)
 	- [Future Upgrades](#future-upgrades)
 	- [Warnings and Disclaimers](#warnings-and-disclaimers)
@@ -34,7 +34,7 @@ Towards the top of the script are the following parameters:
 7. Storage method: Provide BASE64 encoded "user:password" for storage via API. Otherwise locally stored.
 11. Overrides (optional)
 
-#### 4 - Admin Username and Full Name
+#### Admin Username and Full Name
 The short username of the admin user to create/update.
 
 Optionally, a full name can be provided. Otherwise, the short name will be used for both.
@@ -42,7 +42,7 @@ Optionally, a full name can be provided. Otherwise, the short name will be used 
 Example:
 > breakglass Breakglass Admin
 
-#### 5 - Available Password Methods
+#### Available Password Methods
 The following options/schemes for generating passwords are available:
 + nato - Combines three (by default) NATO phonetic letters _(e.g. WhiskeyTangoFoxtrot)_
 + wopr - Like the launch codes in the 80s movie, ["Wargames"](https://www.imdb.com/title/tt0086567) _(e.g. "CPE 1704 TKS")_
