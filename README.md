@@ -66,6 +66,7 @@ The name of the Extension Attribute in which to store the password.
 ##### Storing the password in Jamf Pro *(default)*
 
 <img src="images/APIUserPermissions.png" width="300" align=right />
+
 Provide the base64 encoded username and password of a Jamf Pro (API) user account with *READ* **and** *UPDATE* permissions for the *Computers* object as well as for the following objects based on the *Inventory Display* option for the Extension Attribute:
 * User and Location - *Users*
 * Extension Attributes - *Computer Extension Attributes*
