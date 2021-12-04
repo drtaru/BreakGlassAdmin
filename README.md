@@ -28,6 +28,7 @@ Where there are several other implementations of LAPS for Macs out in the Jamf N
 ## Usage
 
 Towards the top of the script are the following parameters:
+
 4. The username and (optionally) full name of the admin account
 5. Which method of creating a password to use (see below)
 6. Name of extension attribute where password is store (e.g. "Breakglass Admin")
