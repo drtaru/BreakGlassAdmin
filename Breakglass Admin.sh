@@ -68,7 +68,7 @@ APIHASH=$([ "$7"] && echo "$7" || echo "")
 
 ## Other Main Defaults
 ## These can either be harcoded here or overriden with $11 (see below)
-DEBUG='' ##
+DEBUG='' ## Default is off. 
 NUM=''  ## Override for each password method's defaults
         ##           nato =  3 words
         ##           xkcd =  4 words
@@ -137,7 +137,7 @@ function createRandomPassword() {
 		xkcd) ## Using the system from the XKCD webcomic (https://xkcd.com/936/)
 			NUM=$([ ${NUM} ] && echo ${NUM} || echo "4")
 			## Get words that are betwen 4 and 6 characters in length, ignoring proper nouns
-			MAX=$(awk '(length > 3 && length < 7 && /^[a-z]/)' /usr/share/dict/words | wc -l)
+			MAX=$(awk '(length > 3 && length < 9 && /^[a-z]/)' /usr/share/dict/words | wc -l)
 			CHOICES=$(for u in $(jot -r ${NUM} 0 $((${MAX}-1)) ); do awk '(length > 3 && length < 7 && /^[a-z]/)' /usr/share/dict/words 2>/dev/null | tail +${u} 2>/dev/null | head -1 ; done)
 			NEWPASS=""
 			for word in ${CHOICES}; do
