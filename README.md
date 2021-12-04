@@ -102,7 +102,11 @@ STOREREMOTE="" ## Set to 'Yes' below -IF- APIHASH is provided
 STORELOCAL=""  ## Set to 'Yes' below -IF- no APIHASH or overriden
 LOCALPATH="/Library/Preferences"
 LOCALPREFIX="tech.rocketman"
+```
 
+Rather than turn each of these options into their own policy parameter, these options are defined in a block here. They can either be directly edited _(hardcoded)_ in the script or overridden by passing in a variable assignment string into parameter 11.
+
+```bash
 ## Allow for overrides of everything so far...
 ## If the 11th policy parameter contains an equal sign, run eval on the
 ## whole thing.
@@ -115,8 +119,6 @@ LOCALPREFIX="tech.rocketman"
 ##          the computer outside the policy run.
 [[ "$11" == *"="* ]] && eval ${11} ## Comment out to disable
 ```
-
-Rather than turn each of these options into their own policy parameter, these options are defined in a block here. They can either be directly edited _(hardcoded)_ in the script or overridden by passing in a variable assignment string into parameter 11.
 
 For example; if _'nato'_ was the selected password method and the following was entered into parameter 11 of the policy:
 > NUM=5;HIDDENFLAG=;FORCE=1;STORELOCAL="Yes"
