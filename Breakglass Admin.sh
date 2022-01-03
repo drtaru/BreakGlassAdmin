@@ -12,15 +12,13 @@
         Name: Break Glass Admin
  Description: Creates/manages a hidden admin account with a random password
   Parameters: $1-$3 - Reserved by Jamf (Mount Point, Computer Name, Username)
-              $4 - The name of the admin account
+              $4 - The username and (optionally) full name of the admin account
               $5 - Which method of creating a password to use (see below)
-              $6 - Storage method:
-                   "LOCAL" or Base64 encoded "user:password" string for API
-              $7 - Name of extension attribute where password is stored
-                   (e.g. "Backdoor Admin Password" for server-side or
-                   "tech.rocketman.breakglass.plist" for local)
-              $8 - Force (0 or 1) - If password is unknown,
-                   do we delete the old account and recreate?
+              $6 - Name of extension attribute where password is stored
+                   (e.g. "Breakglass Admin")
+              $7 - Storage method: Provide BASE64 encoded "user:password" for
+                                   storage via API. Otherwise locally stored.
+              $11- Overrides (optional) - See GitHub for usage
 
 Available Password Methods:
             'nato' - Combines words from the NATO phonetic alphabet
@@ -39,12 +37,16 @@ Available Password Methods:
                      * 1 Lower case character (min)
                      * 1 Digit (min)
                      * 1 Special character (min)
+                     Optionally you can add a string to specify overrides
+                     in the following format:
+                       N=20;U=3;L=1;D=2;S=0
 
 Latest version and additional notes available at our GitHub
 		https://github.com/Rocketman-Tech/BreakGlassAdmin
 
 EOL
 
+<<<<<<< HEAD:breakglassAdmin.sh
 ## Get the policy variables
 ADMINUSER="$4" 	## What is the name of the admin user to change/create
 PASSMODE="$5"   ## Which method to use to create the password (nato, xkcd, names, pseudoRandom)
@@ -63,17 +65,82 @@ else
 	APIHASH=$6
 	APIURL=$(defaults read /Library/Preferences/com.jamfsoftware.jamf.plist jss_url)
 	SERIAL=$(system_profiler SPHardwareDataType | grep -i serial | grep system | awk '{print $NF}')
+=======
+##
+## Create settings from Policy Parameters
+##
+
+## User-related components
+ADMINUSER=$([ "$4" ] && echo "$4" || echo "breakglass Breakglass Admin")
+USERNAME=$(echo "${ADMINUSER}" | sed -nr 's/^([^\ ]+)\ (.*)$/\1/p' )
+FULLNAME=$(echo "${ADMINUSER}" | sed -nr 's/^([^\ ]+)\ (.*)$/\2/p' )
+FULLNAME=$( [[ $FULLNAME != "" ]] && echo "${FULLNAME}" || echo ${USERNAME} )
+
+## Choose the password generation method
+## E.g. nato, wopr, xkcd, names, pseudoRandom
+PASSMODE=$([ "$5" ] && echo "$5" || echo "custom")
+
+## Name of the extension attribute to store password
+EXTATTR=$([ "$6" ] && echo "$6" || echo "Breakglass Admin")
+
+## API User "Hash" - Base64 encoded "user:password" string for API use
+APIHASH=$([ "$7"] && echo "$7" || echo "")
+
+## Other Main Defaults
+## These can either be harcoded here or overriden with $11 (see below)
+DEBUG='' ## Default is off. 
+NUM=''  ## Override for each password method's defaults
+        ##           nato =  3 words
+        ##           xkcd =  4 words
+        ##           name =  4 names
+        ##   pseudoRandom = 16 characters
+HIDDENFLAG="-hiddenUser" ## Set to empty for visible
+FORCE="0" ## 1 (true) or 0 (false) - USE WITH EXTREME CAUTION!
+          ## If true and old password is unknown or can't be changed,
+          ## the script will delete the account and re-create it instead.
+STOREREMOTE="" ## Set to 'Yes' below -IF- APIHASH is provided
+STORELOCAL=""  ## Set to 'Yes' below -IF- no APIHASH or overriden
+LOCALPATH="/Library/Preferences"
+LOCALPREFIX="tech.rocketman"
+
+## Allow for overrides of everything so far...
+## If the 11th policy parameter contains an equal sign, run eval on the
+## whole thing.
+## Example: If $11 is 'NUM=5;HIDDENFLAG=;FORCE=1;STORELOCAL="Yes"', then
+##  the values of the variables with the same name of those above would change.
+## WARNING! This would be HORRIBLE security in a script that remains local
+##          as any bash-savvy user could inject whatever code they wanted to.
+##          This danger is LESSENED by the fact that the parameters are
+##          provided at run-time by Jamf and the script is not stored on
+##          the computer outside the policy run.
+[[ "$11" == *"="* ]] && eval ${11} ## Comment out to disable
+
+## Finalize storage options
+if [ ${APIHASH} ]; then
+  STOREREMOTE="Yes"
+  APIURL=$(defaults read /Library/Preferences/com.jamfsoftware.jamf.plist jss_url)
+  SERIAL=$(system_profiler SPHardwareDataType | grep -i serial | grep system | awk '{print $NF}')
+else
+  STORELOCAL="Yes"
+fi
+if [ $STORELOCAL ]; then
+  ## The local file will use the same name but without anything but letters
+  ## E.g. "Hidden Admin's Password" becomes "HiddenAdminsPassword"
+  ATTRABBR=$(echo ${EXTATTR} | tr -dc '[:alpha:]')
+  LOCALEA="${LOCALPATH}/${LOCALPREFIX}.${ATTRABBR}.plist"
+>>>>>>> newparams:Breakglass Admin.sh
 fi
 
 ##
 ## Functions
 ##
-
 function debugLog () {
-	message=$1
-	timestamp=$(date +'%H%M%S')
+  if [[ ${DEBUG} ]]; then
+	 message=$1
+	 timestamp=$(date +'%H%M%S')
 
-	echo "${timestamp}: ${message}" >> /tmp/debug.log
+	 echo "${timestamp}: ${message}" >> /tmp/debug.log
+  fi
 }
 
 function createRandomPassword() {
@@ -82,24 +149,16 @@ function createRandomPassword() {
 	case "$system" in
 
 		nato) ## Using NATO Letters (e.g. WhiskeyTangoFoxtrot)
-			NUM=4
+			NUM=$([ ${NUM} ] && echo ${NUM} || echo "3")
 			NATO=(Alpha Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliet Kilo Lima Mike November Oscar Papa Quebec Romeo Sierra Tango Uniform Victor Whiskey Yankee Zulu)
 			MAX=${#NATO[@]}
 			NEWPASS=$(for u in $(jot -r ${NUM} 0 $((${MAX}-1)) ); do  echo -n ${NATO[$u]} ; done)
 			;;
 
-		wopr) ## Like the launch codes in the 80s movie "Wargames" (e.g. "CPE 1704 TKS")
-			## FWIW - The odds of getting the same code as in the movie is roughtly three trillion to one.
-			PRE=$(jot -nrc -s '' 3 65 90)
-			NUM=$(jot -nr -s '' 4 0 9)
-			POST=$(jot -nrc -s '' 3 65 90)
-			NEWPASS="${PRE} ${NUM} ${POST}"
-			;;
-
 		xkcd) ## Using the system from the XKCD webcomic (https://xkcd.com/936/)
-			NUM=4
+			NUM=$([ ${NUM} ] && echo ${NUM} || echo "4")
 			## Get words that are betwen 4 and 6 characters in length, ignoring proper nouns
-			MAX=$(awk '(length > 3 && length < 7 && /^[a-z]/)' /usr/share/dict/words | wc -l)
+			MAX=$(awk '(length > 3 && length < 9 && /^[a-z]/)' /usr/share/dict/words | wc -l)
 			CHOICES=$(for u in $(jot -r ${NUM} 0 $((${MAX}-1)) ); do awk '(length > 3 && length < 7 && /^[a-z]/)' /usr/share/dict/words 2>/dev/null | tail +${u} 2>/dev/null | head -1 ; done)
 			NEWPASS=""
 			for word in ${CHOICES}; do
@@ -109,15 +168,25 @@ function createRandomPassword() {
 			done
 			;;
 
+		wopr) ## Like the launch codes in the 80s movie "Wargames" (https://www.imdb.com/title/tt0086567)
+			## (Example "CPE 1704 TKS")
+			## Fun Fact - The odds of getting the same code as in the movie is roughtly three trillion to one.
+			PRE=$(jot -nrc -s '' 3 65 90)
+			NUM=$(jot -nr -s '' 4 0 9)
+			POST=$(jot -nrc -s '' 3 65 90)
+			NEWPASS="${PRE} ${NUM} ${POST}"
+			;;
+
 		names) ## Uses the same scheme as above but only with the propernames database
-			NUM=4
+			NUM=$([ ${NUM} ] && echo ${NUM} || echo "4")
 			MAX=$(wc -l /usr/share/dict/propernames | awk '{print $1}')
 			CHOICES=$(for u in $(jot -r ${NUM} 0 $((${MAX}-1)) ); do tail +${u} /usr/share/dict/propernames 2>/dev/null | head -1 ; done)
 			NEWPASS=$(echo "${CHOICES}" | tr -d "[:space:]" )
 			;;
 
 		pseudoRandom) ## Based on University of Nebraska' LAPS system (https://github.com/NU-ITS/LAPSforMac)
-			NUM=16
+			NUM=$([ ${NUM} ] && echo ${NUM} || echo "16")
+			## Remove Ambigious characters
 			NEWPASS=$(openssl rand -base64 100 | tr -d OoIi1lLS | head -c${NUM};echo)
 			;;
 
@@ -131,6 +200,10 @@ function createRandomPassword() {
 			L=1  # Minimum lower case
 			D=1  # Minumum digits
 
+			## NOTE:
+			## If N < S+U+L+D, then N = S+U+L+D
+			## If N > S+U+L+D, then random characters from the ENTIRE range will be used to fill
+
 			## If there are overrides passed in, use them
 			INPUT=$(echo ${system} | awk '{print $2}')
 			eval ${INPUT}
@@ -140,16 +213,18 @@ function createRandomPassword() {
 			## 65-90 - Upper
 			## 97-122 - Lower
 
-			## Generate the minumums
-			UC=($(jot -r ${U} 65 90))  ## Upper case
-			LC=($(jot -r ${L} 97 122)) ## Lower Case
-			NC=($(jot -r ${D} 48 57))  ## Digits
+			## Generate the minimums
+			UC=($([ ${U} -gt 0 ] && echo $(jot -r ${U} 65 90) || echo ""))  ## Upper case
+			LC=($([ ${L} -gt 0 ] && echo $(jot -r ${L} 97 122) || echo "")) ## Lower Case
+			NC=($([ ${D} -gt 0 ] && echo $(jot -r ${D} 48 57) || echo ""))  ## Digits
 			## Special characters
-			SCNA=({33..47} {58..64} {91..96} {122..126})
 			SN=()
-			for x in $(jot -r ${S} 0 ${#SCNA[@]}); do
-				SN+=(${SCNA[$x]})
-			done
+			if [ ${S} -gt 0 ]; then
+				SCNA=({33..47} {58..64} {91..96} {122..126})
+				for x in $(jot -r ${S} 0 ${#SCNA[@]}); do
+					SN+=(${SCNA[$x]})
+				done
+			fi
 
 			## Put the minimums together
 			ALL=(${UC[@]} ${LC[@]} ${NC[@]} ${SN[@]})
@@ -178,29 +253,35 @@ function createRandomPassword() {
 	echo ${NEWPASS}
 }
 
-function createHiddenAdmin() {
-
+function createBreakglassAdmin() {
 	## Using the built-in jamf tool which beats the old way which doesn't work
 	## across all OS versions the same way.
   echo "Creating ${ADMINUSER}"
-	jamf createAccount -username ${ADMINUSER} -realname "${ADMINUSER}" -password "${NEWPASS}" –home /private/var/${ADMINUSER} –shell “/bin/zsh” -hiddenUser -admin -suppressSetupAssistant
+	jamf createAccount \
+    -username ${USERNAME} \
+    -realname "${FULLNAME}" \
+    -password "${NEWPASS}" \
+    –home /private/var/${USERNAME} \
+    –shell “/bin/zsh” \
+    ${HIDDENFLAG} \
+    -admin \
+    -suppressSetupAssistant
 }
 
 function changePassword() {
-
 	## Delete keychain if present
-	rm -f "~${ADMINUSER}/Library/Keychains/login.keychain"
+	rm -f "~${USERNAME}/Library/Keychains/login.keychain"
 
 	## Change password
-	jamf changePassword -username ${ADMINUSER} -oldPassword "${OLDPASS}" -password "${NEWPASS}"
+	jamf changePassword -username ${USERNAME} -oldPassword "${OLDPASS}" -password "${NEWPASS}"
 
 	## If we are forcing the issue
 	if [[ $? -ne 0 ]]; then ## Error
 		echo "ERROR: $?" >> /tmp/debug.log
 		if [[ ${FORCE} ]]; then
 			echo "Delete and recreate"
-			jamf deleteAccount -username ${ADMINUSER} -deleteHomeDirectory
-			createHiddenAdmin
+			jamf deleteAccount -username ${USERNAME} -deleteHomeDirectory
+			createBreakglassAdmin
 		else
 			## Log it
 			NEWPASS="EXCEPTION - Password change failed: $?"
@@ -209,16 +290,26 @@ function changePassword() {
 }
 
 function getCurrentPassword() {
-	if [[ ${STORAGE} == "LOCAL" ]]; then
+
+  if [[ $STOREREMOTE ]]; then
+		## Get the password through the API
+		CURRENTPASS=$( \
+      curl -ks \
+      -H "Authorization: Basic ${APIHASH}" \
+      -H "Accept: text/xml" \
+      ${APIURL}JSSResource/computers/serialnumber/${SERIAL}/subset/extension_attributes \
+      | xmllint --xpath "//*[name='${EXTATTR}']/value/text()" - \
+      2>/dev/null \
+    )
+	elif [[ ${STORELOCAL} ]]; then
 		if [[ -f "${LOCALEA}" ]]; then
 			CURRENTPASS=$(defaults read "${LOCALEA}" Password 2>/dev/null)
 		else
 			CURRENTPASS="EXCEPTION - Local attribute requested but not found"
 		fi
-	else
-		## Get the password through the API
-		CURRENTPASS=$(curl -ks -H "Authorization: Basic ${APIHASH}" -H "Accept: text/xml" ${APIURL}JSSResource/computers/serialnumber/${SERIAL}/subset/extension_attributes | xmllint --xpath "//*[name='${EXTATTR}']/value/text()" -)
-	fi
+  else
+      CURRENTPASS="EXCEPTION - No storage method selected" ## This -should- never happen
+  fi
 
 	## Pass it back
 	echo $CURRENTPASS
@@ -226,31 +317,36 @@ function getCurrentPassword() {
 
 function storeCurrentPassword() {
 
-	if [[ ${STORAGE} == "LOCAL" ]]; then
+	if [[ ${STORELOCAL} ]]; then
 		## If the file doesn't exist, make it and secure it
 		if [[ ! -f "${LOCALEA}" ]]; then
 			touch "${LOCALEA}"
 			chown root:wheel "${LOCALEA}"
 			chmod 600 "${LOCALEA}"
 		fi
-
 		## Store the password locally for pickup by Recon
 		/usr/bin/defaults write "${LOCALEA}" Password -string "${NEWPASS}"
-	else
+  fi
+
+  if [[ ${STOREREMOTE} ]]; then
 		# Store the password in Jamf
 		XML="<computer><extension_attributes><extension_attribute><name>${EXTATTR}</name><value>${NEWPASS}</value></extension_attribute></extension_attributes></computer>"
 		debugLog "XML: ${XML}"
-		curl -k -H "Authorization: Basic ${APIHASH}" "${APIURL}JSSResource/computers/serialnumber/${SERIAL}" -H "Content-type: application/xml" -X PUT -d "${XML}"
+		curl -sk \
+    -H "Authorization: Basic ${APIHASH}" \
+    -H "Content-type: application/xml" \
+    "${APIURL}JSSResource/computers/serialnumber/${SERIAL}" \
+    -X PUT \
+    -d "${XML}"
 	fi
 }
 
 ##
-## Main
+## Main Script
 ##
 
 ## See if the user exists
-EXISTS=$(id ${ADMINUSER} 2>/dev/null | wc -l | awk '{print $NF}')
-debugLog "Exists: ${EXISTS}"
+EXISTS=$(id ${USERNAME} 2>/dev/null | wc -l | awk '{print $NF}')
 
 ## Either way, we'll need a random password
 NEWPASS=$(createRandomPassword ${PASSMODE})
@@ -266,29 +362,32 @@ if [[ $EXISTS -gt 0 ]]; then
 
 	## Exception Block
 	## This was added to handle the computers that had an account prior to enrollment.
-	## To change a password this, we need to know the old one. Now it also handles change failures and more.
+	## To change a password, we need to know the old one. If there is an issue storing
+  ## or retreiving the password, the issue will be stored for reporting and mitigation.
 	##
 	## ADDITIONAL NOTE: If the record for any previous computer is updated with the correct password
 	##		this script will run normally next time and update with a random password
-	##
 	case ${OLDPASS} in
+    ## No password found
 		"")
-			debugLog "Unknown - create exception"
+			debugLog "Old password unknown - create exception"
 			## The account was created before and is unknown
 			NEWPASS="EXCEPTION - Unknown password"
 			;;
 
+    ## If a previous run had an issue, the 'password' was logged as an 'EXCEPTION'.
 		EXCEPTION*)
 			debugLog "Previous exception - ${OLDPASS}"
 			if [[ ${FORCE} ]]; then
 				## Request a password change with known bad data to trigger refresh
 				OLDPASS="NULL"
 				changePassword
-			else
+			else ## Previous error not resolved. Re-asserting.
 				NEWPASS=${OLDPASS}
 			fi
 			;;
 
+    ## All is well. Moving on.
 		*)
 			debugLog "Changing from ${OLDPASS} to ${NEWPASS}"
 			## Change the password
@@ -297,19 +396,19 @@ if [[ $EXISTS -gt 0 ]]; then
 	esac
 	## End exception block
 
-else
+else ## User does not exist. We are creating it.
 
 	## Create the account
-	debugLog "Creating new admin"
+	debugLog "Creating new admin."
 	## Create the user
-	createHiddenAdmin
+	createBreakglassAdmin
 
 fi
 
 ## Store the new password
 storeCurrentPassword
 
-## Store and clear the debug log
+## Dump and clear the debug log
 if [[ -f /tmp/debug.log ]]; then
 	echo $(cat /tmp/debug.log)
 	rm /tmp/debug.log
