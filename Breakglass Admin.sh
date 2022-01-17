@@ -46,26 +46,6 @@ Latest version and additional notes available at our GitHub
 
 EOL
 
-<<<<<<< HEAD:breakglassAdmin.sh
-## Get the policy variables
-ADMINUSER="$4" 	## What is the name of the admin user to change/create
-PASSMODE="$5"   ## Which method to use to create the password (nato, xkcd, names, pseudoRandom)
-STORAGE="$6"    ## "LOCAL" or Base64 encoded "user:password" string
-EXTATTR="$7"    ## Name of the extension attribute where password is stored
-                ##	(e.g. "Backdoor Admin Password" for cloud or "tech.rocketman.backdooradmin.plist" for local)
-FORCE="$8"      ## 1 (true) or 0 (false) - If true and old password is unknown or can't be changed,
-                ##	the script will delete the account and re-create it instead.
-                ##	USE WITH EXTREME CAUTION!
-
-## Set additional variables based on local or remote storage
-if [[ ${STORAGE} == "LOCAL" ]]; then
-	LOCALEA="/Library/Preferences/${EXTATTR}"
-else
-	STORAGE="REMOTE" ## Store in Jamf Pro as Extension Attribute
-	APIHASH=$6
-	APIURL=$(defaults read /Library/Preferences/com.jamfsoftware.jamf.plist jss_url)
-	SERIAL=$(system_profiler SPHardwareDataType | grep -i serial | grep system | awk '{print $NF}')
-=======
 ##
 ## Create settings from Policy Parameters
 ##
@@ -88,7 +68,7 @@ APIHASH=$([ "$7"] && echo "$7" || echo "")
 
 ## Other Main Defaults
 ## These can either be harcoded here or overriden with $11 (see below)
-DEBUG='' ## Default is off. 
+DEBUG='' ## Default is off.
 NUM=''  ## Override for each password method's defaults
         ##           nato =  3 words
         ##           xkcd =  4 words
@@ -128,7 +108,6 @@ if [ $STORELOCAL ]; then
   ## E.g. "Hidden Admin's Password" becomes "HiddenAdminsPassword"
   ATTRABBR=$(echo ${EXTATTR} | tr -dc '[:alpha:]')
   LOCALEA="${LOCALPATH}/${LOCALPREFIX}.${ATTRABBR}.plist"
->>>>>>> newparams:Breakglass Admin.sh
 fi
 
 ##
