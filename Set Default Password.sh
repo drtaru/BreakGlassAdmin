@@ -43,7 +43,7 @@ NEWPASS="$4" ## No default - will error if missing
 EXTATTR=$([ "$5" ] && echo "$5" || echo "Breakglass Admin")
 
 ## API User "Hash" - Base64 encoded "user:password" string for API use
-APIHASH=$([ "$6"] && echo "$6" || echo "")
+APIHASH=$([ "$6" ] && echo "$6" || echo "")
 
 ## Other Main Defaults
 ## These can either be harcoded here or overriden with $11 (see below)
