@@ -137,7 +137,7 @@ The resulting changes would take place:
 There are two additional support scripts in this repository:
 
 * **Extension Attribute.sh** - If you are choosing to store the password on the client side, but want it copied into Jamf, create a script-based extenstion attribute with this code to have each computer send that password during recon.
-* **Set Default Password.sh]** - This workflow was originally designed to create and then manage the password for an account. For organizations wishing to use an existing admin account with a fixed password, this script will set the local or remote extension attribute to the existing value before the main script runs.
+* **Set Default Password.sh** - This workflow was originally designed to create and then manage the password for an account. For organizations wishing to use an existing admin account with a fixed password, this script will set the local or remote extension attribute to the existing value before the main script runs.
 
 ## Future Upgrades
 

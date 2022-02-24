@@ -15,7 +15,7 @@
               The main script creates the account on the first run and then
               rotates the password on subsequent runs.
 
-              For organizations that what to leverage and existing backdoor
+              For organizations that want to leverage an existing backdoor
               account instead, this script will store the current password
               in the client-side and/or server-side attributes for future runs.
 
