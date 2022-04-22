@@ -96,8 +96,7 @@ function storeCurrentPassword() {
   if [[ ${STOREREMOTE} ]]; then
 		# Store the password in Jamf
 		XML="<computer><extension_attributes><extension_attribute><name>${EXTATTR}</name><value>${NEWPASS}</value></extension_attribute></extension_attributes></computer>"
-		debugLog "XML: ${XML}"
-		curl -sk \
+		curl -s \
     -H "Authorization: Basic ${APIHASH}" \
     -H "Content-type: application/xml" \
     "${APIURL}JSSResource/computers/serialnumber/${SERIAL}" \
@@ -110,7 +109,7 @@ function storeCurrentPassword() {
 ## Main Script
 ##
 
-if [[ if ${NEWPASS} ]]; then
+if [[ ${NEWPASS} ]]; then
   storeCurrentPassword
   EXIT=0
 else
