@@ -64,7 +64,7 @@ PASSMODE=$([ "$5" ] && echo "$5" || echo "custom")
 EXTATTR=$([ "$6" ] && echo "$6" || echo "Breakglass Admin")
 
 ## API User "Hash" - Base64 encoded "user:password" string for API use
-APIHASH=$([ "$7"] && echo "$7" || echo "")
+APIHASH=$([ "$7" ] && echo "$7" || echo "")
 
 ## Other Main Defaults
 ## These can either be harcoded here or overriden with $11 (see below)
